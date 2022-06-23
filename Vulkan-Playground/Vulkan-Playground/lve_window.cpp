@@ -1,24 +1,21 @@
-#pragma once 
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#include <iostream>
-
-using namespace std;
+#include "lve_window.h"
 
 namespace lve {
-	class LveWindow {
-	public:
-		LveWindow(int w, int h, string name);
-		~LveWindow();
+	LveWindow::LveWindow(int w, int h, string name) : width{ w }, height{ h }, windowName{ name } {
+		initWindow();
+	}
 
-	private:
-		void initWindow();
+	LveWindow::~LveWindow() {
+		glfwDestroyWindow(window);
+		glfwTerminate();
+	}
 
-		const int width;
-		const int height;
+	void LveWindow::initWindow() {
+		glfwInit();
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-		string windowName;
-		GLFWwindow* window;
-	};
+		window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
+
+	}
 }
