@@ -1,5 +1,6 @@
 ﻿  FirstApp.cpp
-  lve_pipeline.cpp
+  lve_device.cpp
+  lve_window.cpp
   main.cpp
   Generating Code...
 LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
