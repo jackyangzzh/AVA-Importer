@@ -14,9 +14,18 @@ int main() {
 
 	GLFWwindow* window = glfwCreateWindow(800, 600, "Test Window", nullptr, nullptr);
 
+	uint32_t extensionCount = 0;
+	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+	printf("Extension count: %i\n", extensionCount);
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 	}
 
 	glfwDestroyWindow(window);
+
+	glfwTerminate();
+
+	return 0;
 }
