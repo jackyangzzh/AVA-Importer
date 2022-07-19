@@ -1,6 +1,6 @@
 #pragma once
 
-#define GLFW_INCLINE_VULKAN
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <stdexcept>
@@ -8,7 +8,17 @@
 
 class VulkanRenderer
 {
+public:
 	VulkanRenderer();
+
+	int init(GLFWwindow* newWindow);
+
 	~VulkanRenderer();
+
+private:
+	GLFWwindow* window;
+
+	VkInstance instance;
+
 };
 

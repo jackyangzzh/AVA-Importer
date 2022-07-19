@@ -1,13 +1,16 @@
-#define GLFW_INCLINE_VULKAN
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <iostream>
 #include <stdexcept>
 #include <vector>
 
+#include "../Header Files/VulkanRenderer.h";
+
 using namespace std;
 
 GLFWwindow* window;
+VulkanRenderer vulkanRenderer;
 
 void initWindow(string wName = "Test Window", const int width = 800, const int height = 600) {
 	glfwInit();
@@ -20,6 +23,15 @@ void initWindow(string wName = "Test Window", const int width = 800, const int h
 
 int main() {
 	initWindow("Test Window", 800, 600);
+
+	vulkanRenderer.init(window);
+
+	while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+	}
+
+	glfwDestroyWindow(window);
+	glfwTerminate();
 
 	return 0;
 }
