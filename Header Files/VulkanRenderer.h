@@ -20,5 +20,7 @@ private:
 
 	VkInstance instance;
 
+	void createInstance();
+
 };
 

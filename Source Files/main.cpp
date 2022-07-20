@@ -24,7 +24,9 @@ void initWindow(string wName = "Test Window", const int width = 800, const int h
 int main() {
 	initWindow("Test Window", 800, 600);
 
-	vulkanRenderer.init(window);
+	if (vulkanRenderer.init(window) == EXIT_FAILURE) {
+		return EXIT_FAILURE;
+	}
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
