@@ -6,12 +6,15 @@
 #include <stdexcept>
 #include <vector>
 
+using namespace std;
+
 class VulkanRenderer
 {
 public:
 	VulkanRenderer();
 
 	int init(GLFWwindow* newWindow);
+	void cleanup();
 
 	~VulkanRenderer();
 
@@ -22,5 +25,6 @@ private:
 
 	void createInstance();
 
+	bool checkInstanceExtensionSupport(vector<const char*>* checkExtensions);
 };
 
