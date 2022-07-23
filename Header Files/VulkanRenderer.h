@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Utilities.h"
+
 using namespace std;
 
 class VulkanRenderer
@@ -22,9 +24,18 @@ private:
 	GLFWwindow* window;
 
 	VkInstance instance;
+	struct {
+		VkPhysicalDevice physicalDevice;
+		VkDevice logicalDevice;
+	} mainDevice;
 
 	void createInstance();
 
+	void getPhysicalDevice();
+
 	bool checkInstanceExtensionSupport(vector<const char*>* checkExtensions);
+	bool checkDeviceSuitable(VkPhysicalDevice device);
+
+	QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
 };
 

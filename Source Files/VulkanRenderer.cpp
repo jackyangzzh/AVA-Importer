@@ -11,6 +11,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	window = newWindow;
 	try {
 		createInstance();
+		getPhysicalDevice();
 	}
 	catch (runtime_error& e) {
 		printf("ERROR: %s\n", e.what());
@@ -70,6 +71,21 @@ void VulkanRenderer::createInstance()
 	}
 }
 
+void VulkanRenderer::getPhysicalDevice()
+{
+	uint32_t deviceCount = 0;
+	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+	if (deviceCount == 0) {
+		throw runtime_error("Cannot find GPUs that support Vulkan Instance!");
+	}
+
+	vector<VkPhysicalDevice> deviceList(deviceCount);
+	vkEnumeratePhysicalDevices(instance, &deviceCount, deviceList.data());
+
+	mainDevice.physicalDevice = deviceList[0];
+}
+
 bool VulkanRenderer::checkInstanceExtensionSupport(vector<const char*>* checkExtensions)
 {
 	uint32_t extensionCount = 0;
@@ -92,4 +108,32 @@ bool VulkanRenderer::checkInstanceExtensionSupport(vector<const char*>* checkExt
 	}
 
 	return true;
+}
+
+bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
+{
+	//VkPhysicalDeviceProperties deviceProperties;
+	//vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	//VkPhysicalDeviceFeatures deviceFeatures;
+	//vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+	return true;
+}
+
+QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device)
+{
+	QueueFamilyIndices indices;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	vector<VkQueueFamilyProperties> queueFamilyList(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyList.data());
+
+	for (const auto& queueFamily : queueFamilyList) {
+		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			
+		}
+	}
 }
