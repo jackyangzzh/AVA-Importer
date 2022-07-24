@@ -28,8 +28,10 @@ private:
 		VkPhysicalDevice physicalDevice;
 		VkDevice logicalDevice;
 	} mainDevice;
+	VkQueue graphicsQueue;
 
 	void createInstance();
+	void createLogicalDevice();
 
 	void getPhysicalDevice();
 

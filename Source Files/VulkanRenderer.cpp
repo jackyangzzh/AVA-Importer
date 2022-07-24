@@ -12,6 +12,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	try {
 		createInstance();
 		getPhysicalDevice();
+		createLogicalDevice();
 	}
 	catch (runtime_error& e) {
 		printf("ERROR: %s\n", e.what());
@@ -23,6 +24,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 
 void VulkanRenderer::cleanup()
 {
+	vkDestroyDevice(mainDevice.logicalDevice, nullptr);
 	vkDestroyInstance(instance, nullptr);
 }
 
@@ -56,7 +58,7 @@ void VulkanRenderer::createInstance()
 	}
 
 	if (!checkInstanceExtensionSupport(&instanceExtensions)) {
-		throw runtime_error("VkInstance does not support required extensions!");
+		throw runtime_error("VkInstance does not support required extensions.");
 	}
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
@@ -71,19 +73,53 @@ void VulkanRenderer::createInstance()
 	}
 }
 
+void VulkanRenderer::createLogicalDevice()
+{
+	QueueFamilyIndices indices = getQueueFamilies(mainDevice.physicalDevice);
+
+	VkDeviceQueueCreateInfo queueCreateInfo = {};
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+	queueCreateInfo.queueCount = 1;
+	float priority = 1.0f;
+	queueCreateInfo.pQueuePriorities = &priority;
+
+	VkDeviceCreateInfo deviceCreateInfo = {};
+	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;  
+	deviceCreateInfo.queueCreateInfoCount = 1;
+	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+	deviceCreateInfo.enabledExtensionCount = 0;
+	deviceCreateInfo.ppEnabledExtensionNames = nullptr;
+	
+	VkPhysicalDeviceFeatures deviceFeatures = {};
+	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+
+	VkResult result = vkCreateDevice(mainDevice.physicalDevice, &deviceCreateInfo, nullptr, &mainDevice.logicalDevice);
+	if (result != VK_SUCCESS) {
+		throw runtime_error("Failed to create a Logical Device");
+	}
+
+	vkGetDeviceQueue(mainDevice.logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
+}
+
 void VulkanRenderer::getPhysicalDevice()
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
 	if (deviceCount == 0) {
-		throw runtime_error("Cannot find GPUs that support Vulkan Instance!");
+		throw runtime_error("Cannot find GPUs that support Vulkan Instance.");
 	}
 
 	vector<VkPhysicalDevice> deviceList(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, deviceList.data());
 
-	mainDevice.physicalDevice = deviceList[0];
+	for (const auto& device : deviceList) {
+		if (checkDeviceSuitable(device)) {
+			mainDevice.physicalDevice = device;
+			break;
+		}
+	}
 }
 
 bool VulkanRenderer::checkInstanceExtensionSupport(vector<const char*>* checkExtensions)
@@ -118,7 +154,9 @@ bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
 	//VkPhysicalDeviceFeatures deviceFeatures;
 	//vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-	return true;
+	QueueFamilyIndices indices = getQueueFamilies(device);
+
+	return indices.isValid();
 }
 
 QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device)
@@ -131,9 +169,16 @@ QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device)
 	vector<VkQueueFamilyProperties> queueFamilyList(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyList.data());
 
+	int i = 0;
 	for (const auto& queueFamily : queueFamilyList) {
 		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			
+			indices.graphicsFamily = i;
 		}
+		if (indices.isValid()) {
+			break;
+		}
+		i++;
 	}
+
+	return indices;
 }
