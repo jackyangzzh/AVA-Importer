@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Utilities.h"
+#include "VulkanValidation.h"
 
 using namespace std;
 
@@ -29,9 +30,11 @@ private:
 		VkDevice logicalDevice;
 	} mainDevice;
 	VkQueue graphicsQueue;
+	VkSurfaceKHR surface;
 
 	void createInstance();
 	void createLogicalDevice();
+	void createSurface();
 
 	void getPhysicalDevice();
 

@@ -13,6 +13,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createInstance();
 		getPhysicalDevice();
 		createLogicalDevice();
+		createSurface();
 	}
 	catch (runtime_error& e) {
 		printf("ERROR: %s\n", e.what());
@@ -24,6 +25,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 
 void VulkanRenderer::cleanup()
 {
+	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyDevice(mainDevice.logicalDevice, nullptr);
 	vkDestroyInstance(instance, nullptr);
 }
@@ -55,6 +57,10 @@ void VulkanRenderer::createInstance()
 
 	for (size_t i = 0; i < glfwExtensionCount; i++) {
 		instanceExtensions.emplace_back(glfwExtensions[i]);
+	}
+
+	if (validationEnabled) {
+		instanceExtensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	}
 
 	if (!checkInstanceExtensionSupport(&instanceExtensions)) {
@@ -100,6 +106,14 @@ void VulkanRenderer::createLogicalDevice()
 	}
 
 	vkGetDeviceQueue(mainDevice.logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
+}
+
+void VulkanRenderer::createSurface()
+{
+	VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+	if (result != VK_SUCCESS) {
+		throw runtime_error("Failed to create a surface.");
+	}
 }
 
 void VulkanRenderer::getPhysicalDevice()
