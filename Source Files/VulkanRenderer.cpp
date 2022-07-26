@@ -11,9 +11,9 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	window = newWindow;
 	try {
 		createInstance();
+		createSurface();
 		getPhysicalDevice();
 		createLogicalDevice();
-		createSurface();
 	}
 	catch (runtime_error& e) {
 		printf("ERROR: %s\n", e.what());
@@ -27,6 +27,9 @@ void VulkanRenderer::cleanup()
 {
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyDevice(mainDevice.logicalDevice, nullptr);
+	if (validationEnabled) {
+		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
+	}
 	vkDestroyInstance(instance, nullptr);
 }
 
@@ -79,23 +82,48 @@ void VulkanRenderer::createInstance()
 	}
 }
 
+void VulkanRenderer::createDebugCallback()
+{
+	if (!validationEnabled) {
+		return;
+	}
+
+	VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
+	callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+	callbackCreateInfo.pfnCallback = debugCallback;
+
+	VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
+	if (result != VK_SUCCESS) {
+		throw runtime_error("Failed to create Debug Callback.");
+	}
+}
+
 void VulkanRenderer::createLogicalDevice()
 {
 	QueueFamilyIndices indices = getQueueFamilies(mainDevice.physicalDevice);
 
-	VkDeviceQueueCreateInfo queueCreateInfo = {};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
-	queueCreateInfo.queueCount = 1;
-	float priority = 1.0f;
-	queueCreateInfo.pQueuePriorities = &priority;
+	vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	set<int> queueFamilyIndices = { indices.graphicsFamily, indices.presentationFamily };
+
+	for (int queueFamilyIndex : queueFamilyIndices) {
+		VkDeviceQueueCreateInfo queueCreateInfo = {};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
+		queueCreateInfo.queueCount = 1;
+		float priority = 1.0f;
+		queueCreateInfo.pQueuePriorities = &priority;
+
+		queueCreateInfos.emplace_back(queueCreateInfo);
+	}
+
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;  
-	deviceCreateInfo.queueCreateInfoCount = 1;
-	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
-	deviceCreateInfo.enabledExtensionCount = 0;
-	deviceCreateInfo.ppEnabledExtensionNames = nullptr;
+	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	
 	VkPhysicalDeviceFeatures deviceFeatures = {};
 	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
@@ -106,6 +134,7 @@ void VulkanRenderer::createLogicalDevice()
 	}
 
 	vkGetDeviceQueue(mainDevice.logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
+	vkGetDeviceQueue(mainDevice.logicalDevice, indices.presentationFamily, 0, &presentationQueue);
 }
 
 void VulkanRenderer::createSurface()
@@ -160,6 +189,62 @@ bool VulkanRenderer::checkInstanceExtensionSupport(vector<const char*>* checkExt
 	return true;
 }
 
+bool VulkanRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device)
+{
+	uint32_t extensionCount = 0;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+	
+	if (extensionCount == 0) {
+		return false;
+	}
+
+	vector<VkExtensionProperties> extensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
+	
+	for (const auto& deviceExtension : deviceExtensions) {
+		bool hasExtension = false;
+		for (const auto& extension : extensions) {
+			if (strcmp(deviceExtension, extension.extensionName) == 0) {
+				hasExtension = true;
+				break;
+			}
+		}
+
+		if (!hasExtension) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool VulkanRenderer::checkValidationLayerSupport()
+{
+	uint32_t validationLayerCount;
+	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
+
+	if (validationLayerCount == 0 && validationLayers.size() > 0) {
+		return false;
+	}
+
+	vector<VkLayerProperties> availableLayers(validationLayerCount);
+	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data());
+
+	for (const auto& validationLayer : validationLayers) {
+		bool hasLayer = false;
+		for (const auto& availableLayer : availableLayers) {
+			if (strcmp(validationLayer, availableLayer.layerName) == 0) {
+				hasLayer = true;
+				break;
+			}
+		}
+
+		if (!hasLayer) {
+			return false;
+		}
+	}
+	return true;
+}
+
 bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
 {
 	//VkPhysicalDeviceProperties deviceProperties;
@@ -170,7 +255,9 @@ bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
 
 	QueueFamilyIndices indices = getQueueFamilies(device);
 
-	return indices.isValid();
+	bool extensionsSuported = checkDeviceExtensionSupport(device);
+
+	return indices.isValid() && extensionsSuported;
 }
 
 QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device)
@@ -188,6 +275,13 @@ QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device)
 		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			indices.graphicsFamily = i;
 		}
+
+		VkBool32 presentationSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentationSupport);
+		if (queueFamily.queueCount > 0 && presentationSupport) {
+			indices.presentationFamily = i;
+		}
+
 		if (indices.isValid()) {
 			break;
 		}
