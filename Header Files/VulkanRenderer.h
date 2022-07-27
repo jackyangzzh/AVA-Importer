@@ -8,7 +8,7 @@
 #include <set>
 
 #include "Utilities.h"
-#include "VulkanValidation.h"
+//#include "VulkanValidation.h"
 
 using namespace std;
 
@@ -48,5 +48,6 @@ private:
 	bool checkDeviceSuitable(VkPhysicalDevice device);
 
 	QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
+	SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
 };
 

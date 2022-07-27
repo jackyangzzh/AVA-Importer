@@ -14,3 +14,9 @@ struct QueueFamilyIndices {
 		return graphicsFamily >= 0 && presentationFamily >= 0;
 	}
 };
+
+struct SwapChainDetails {
+	VkSurfaceCapabilitiesKHR surfaceCapabilities;
+	vector<VkSurfaceFormatKHR> formats;
+	vector<VkPresentModeKHR> presentationModes;
+};

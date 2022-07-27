@@ -27,9 +27,9 @@ void VulkanRenderer::cleanup()
 {
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyDevice(mainDevice.logicalDevice, nullptr);
-	if (validationEnabled) {
-		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
-	}
+	//if (validationEnabled) {
+	//	DestroyDebugReportCallbackEXT(instance, callback, nullptr);
+	//}
 	vkDestroyInstance(instance, nullptr);
 }
 
@@ -39,6 +39,10 @@ VulkanRenderer::~VulkanRenderer()
 
 void VulkanRenderer::createInstance()
 {
+	//if (validationEnabled && !checkValidationLayerSupport()) {
+	//	throw runtime_error("Required validation layers not supported.");
+	//}
+
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "Vulkan App";
@@ -62,9 +66,9 @@ void VulkanRenderer::createInstance()
 		instanceExtensions.emplace_back(glfwExtensions[i]);
 	}
 
-	if (validationEnabled) {
-		instanceExtensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-	}
+	//if (validationEnabled) {
+	//	instanceExtensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	//}
 
 	if (!checkInstanceExtensionSupport(&instanceExtensions)) {
 		throw runtime_error("VkInstance does not support required extensions.");
@@ -82,22 +86,22 @@ void VulkanRenderer::createInstance()
 	}
 }
 
-void VulkanRenderer::createDebugCallback()
-{
-	if (!validationEnabled) {
-		return;
-	}
-
-	VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
-	callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-	callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-	callbackCreateInfo.pfnCallback = debugCallback;
-
-	VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
-	if (result != VK_SUCCESS) {
-		throw runtime_error("Failed to create Debug Callback.");
-	}
-}
+//void VulkanRenderer::createDebugCallback()
+//{
+//	if (!validationEnabled) {
+//		return;
+//	}
+//
+//	VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
+//	callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+//	callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+//	callbackCreateInfo.pfnCallback = debugCallback;
+//
+//	VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
+//	if (result != VK_SUCCESS) {
+//		throw runtime_error("Failed to create Debug Callback.");
+//	}
+//}
 
 void VulkanRenderer::createLogicalDevice()
 {
@@ -217,33 +221,34 @@ bool VulkanRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device)
 	return true;
 }
 
-bool VulkanRenderer::checkValidationLayerSupport()
-{
-	uint32_t validationLayerCount;
-	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
 
-	if (validationLayerCount == 0 && validationLayers.size() > 0) {
-		return false;
-	}
-
-	vector<VkLayerProperties> availableLayers(validationLayerCount);
-	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data());
-
-	for (const auto& validationLayer : validationLayers) {
-		bool hasLayer = false;
-		for (const auto& availableLayer : availableLayers) {
-			if (strcmp(validationLayer, availableLayer.layerName) == 0) {
-				hasLayer = true;
-				break;
-			}
-		}
-
-		if (!hasLayer) {
-			return false;
-		}
-	}
-	return true;
-}
+//bool VulkanRenderer::checkValidationLayerSupport()
+//{
+//	uint32_t validationLayerCount;
+//	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
+//
+//	//if (validationLayerCount == 0 && validationLayers.size() > 0) {
+//	//	return false;
+//	//}
+//
+//	vector<VkLayerProperties> availableLayers(validationLayerCount);
+//	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data());
+//
+//	for (const auto& validationLayer : validationLayers) {
+//		bool hasLayer = false;
+//		for (const auto& availableLayer : availableLayers) {
+//			if (strcmp(validationLayer, availableLayer.layerName) == 0) {
+//				hasLayer = true;
+//				break;
+//			}
+//		}
+//
+//		if (!hasLayer) {
+//			return false;
+//		}
+//	}
+//	return true;
+//}
 
 bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
 {
@@ -257,7 +262,13 @@ bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
 
 	bool extensionsSuported = checkDeviceExtensionSupport(device);
 
-	return indices.isValid() && extensionsSuported;
+	bool swapChainValid = false;
+	if (extensionsSuported) {
+		SwapChainDetails swapChainDetails = getSwapChainDetails(device);
+		swapChainValid = !swapChainDetails.presentationModes.empty() && !swapChainDetails.formats.empty();
+	}
+
+	return indices.isValid() && extensionsSuported && swapChainValid;
 }
 
 QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device)
@@ -289,4 +300,28 @@ QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device)
 	}
 
 	return indices;
+}
+
+SwapChainDetails VulkanRenderer::getSwapChainDetails(VkPhysicalDevice device)
+{
+	SwapChainDetails swapChainDetails;
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &swapChainDetails.surfaceCapabilities);
+
+	uint32_t formatCount = 0;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+
+	if (formatCount != 0) {
+		swapChainDetails.formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, swapChainDetails.formats.data());
+	}
+
+	uint32_t presentationCount = 0;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentationCount, nullptr);
+
+	if (presentationCount != 0) {
+		swapChainDetails.presentationModes.resize(presentationCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentationCount, swapChainDetails.presentationModes.data());
+	}
+
+	return swapChainDetails;
 }
