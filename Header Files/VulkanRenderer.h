@@ -8,7 +8,7 @@
 #include <set>
 
 #include "Utilities.h"
-//#include "VulkanValidation.h"
+#include "VulkanValidation.h"
 
 using namespace std;
 

@@ -11,6 +11,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	window = newWindow;
 	try {
 		createInstance();
+		createDebugCallback();
 		createSurface();
 		getPhysicalDevice();
 		createLogicalDevice();
@@ -27,9 +28,9 @@ void VulkanRenderer::cleanup()
 {
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyDevice(mainDevice.logicalDevice, nullptr);
-	//if (validationEnabled) {
-	//	DestroyDebugReportCallbackEXT(instance, callback, nullptr);
-	//}
+	if (validationEnabled) {
+		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
+	}
 	vkDestroyInstance(instance, nullptr);
 }
 
@@ -39,9 +40,9 @@ VulkanRenderer::~VulkanRenderer()
 
 void VulkanRenderer::createInstance()
 {
-	//if (validationEnabled && !checkValidationLayerSupport()) {
-	//	throw runtime_error("Required validation layers not supported.");
-	//}
+	if (validationEnabled && !checkValidationLayerSupport()) {
+		throw runtime_error("Required validation layers not supported.");
+	}
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -86,22 +87,22 @@ void VulkanRenderer::createInstance()
 	}
 }
 
-//void VulkanRenderer::createDebugCallback()
-//{
-//	if (!validationEnabled) {
-//		return;
-//	}
-//
-//	VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
-//	callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-//	callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-//	callbackCreateInfo.pfnCallback = debugCallback;
-//
-//	VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
-//	if (result != VK_SUCCESS) {
-//		throw runtime_error("Failed to create Debug Callback.");
-//	}
-//}
+void VulkanRenderer::createDebugCallback()
+{
+	if (!validationEnabled) {
+		return;
+	}
+
+	VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
+	callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+	callbackCreateInfo.pfnCallback = debugCallback;
+
+	VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
+	if (result != VK_SUCCESS) {
+		throw runtime_error("Failed to create Debug Callback.");
+	}
+}
 
 void VulkanRenderer::createLogicalDevice()
 {
@@ -221,34 +222,30 @@ bool VulkanRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device)
 	return true;
 }
 
+bool VulkanRenderer::checkValidationLayerSupport() {
+	uint32_t layerCount;
+	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
-//bool VulkanRenderer::checkValidationLayerSupport()
-//{
-//	uint32_t validationLayerCount;
-//	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
-//
-//	//if (validationLayerCount == 0 && validationLayers.size() > 0) {
-//	//	return false;
-//	//}
-//
-//	vector<VkLayerProperties> availableLayers(validationLayerCount);
-//	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data());
-//
-//	for (const auto& validationLayer : validationLayers) {
-//		bool hasLayer = false;
-//		for (const auto& availableLayer : availableLayers) {
-//			if (strcmp(validationLayer, availableLayer.layerName) == 0) {
-//				hasLayer = true;
-//				break;
-//			}
-//		}
-//
-//		if (!hasLayer) {
-//			return false;
-//		}
-//	}
-//	return true;
-//}
+	std::vector<VkLayerProperties> availableLayers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+	for (const char* layerName : validationLayers) {
+		bool layerFound = false;
+
+		for (const auto& layerProperties : availableLayers) {
+			if (strcmp(layerName, layerProperties.layerName) == 0) {
+				layerFound = true;
+				break;
+			}
+		}
+
+		if (!layerFound) {
+			return false;
+		}
+	}
+
+	return true;
+}
 
 bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
 {

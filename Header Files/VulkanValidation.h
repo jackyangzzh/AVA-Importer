@@ -7,7 +7,7 @@ using namespace std;
 const bool validationEnabled = true;
 
 const vector<const char*> validationLayers = {
-	"VK_LAYER_LUNARG_standard_validation"
+	"VK_LAYER_KHRONOS_validation"
 };
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
