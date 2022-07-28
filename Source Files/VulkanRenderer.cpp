@@ -15,6 +15,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createSurface();
 		getPhysicalDevice();
 		createLogicalDevice();
+		
 	}
 	catch (runtime_error& e) {
 		printf("ERROR: %s\n", e.what());
@@ -67,9 +68,9 @@ void VulkanRenderer::createInstance()
 		instanceExtensions.emplace_back(glfwExtensions[i]);
 	}
 
-	//if (validationEnabled) {
-	//	instanceExtensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-	//}
+	if (validationEnabled) {
+		instanceExtensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	}
 
 	if (!checkInstanceExtensionSupport(&instanceExtensions)) {
 		throw runtime_error("VkInstance does not support required extensions.");
@@ -148,6 +149,13 @@ void VulkanRenderer::createSurface()
 	if (result != VK_SUCCESS) {
 		throw runtime_error("Failed to create a surface.");
 	}
+}
+
+void VulkanRenderer::createSwapChain()
+{
+	SwapChainDetails swapChainDetails = getSwapChainDetails(mainDevice.physicalDevice);
+
+
 }
 
 void VulkanRenderer::getPhysicalDevice()
@@ -321,4 +329,9 @@ SwapChainDetails VulkanRenderer::getSwapChainDetails(VkPhysicalDevice device)
 	}
 
 	return swapChainDetails;
+}
+
+VkSurfaceFormatKHR VulkanRenderer::chooseBestSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats)
+{
+	return VkSurfaceFormatKHR();
 }

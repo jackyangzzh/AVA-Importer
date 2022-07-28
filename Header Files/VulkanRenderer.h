@@ -39,6 +39,7 @@ private:
 	void createDebugCallback();
 	void createLogicalDevice();
 	void createSurface();
+	void createSwapChain();
 
 	void getPhysicalDevice();
 
@@ -49,5 +50,7 @@ private:
 
 	QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
 	SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
+
+	VkSurfaceFormatKHR chooseBestSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats);
 };
 
