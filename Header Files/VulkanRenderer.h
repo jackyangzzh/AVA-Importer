@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <vector>
 #include <set>
+#include <algorithm>
 
 #include "Utilities.h"
 #include "VulkanValidation.h"
@@ -34,6 +35,11 @@ private:
 	VkQueue graphicsQueue;
 	VkQueue presentationQueue;
 	VkSurfaceKHR surface;
+	VkSwapchainKHR swapchain;
+	vector<SwapChainImage> swapChainImages;
+
+	VkFormat swapChainImageFormat;
+	VkExtent2D swapChainExtent;
 
 	void createInstance();
 	void createDebugCallback();
@@ -52,5 +58,9 @@ private:
 	SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
 
 	VkSurfaceFormatKHR chooseBestSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats);
+	VkPresentModeKHR chooseBestPresentationMode(const vector<VkPresentModeKHR> presentationModes);
+	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 };
 
