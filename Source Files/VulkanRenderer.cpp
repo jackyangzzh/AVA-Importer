@@ -16,6 +16,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		getPhysicalDevice();
 		createLogicalDevice();
 		createSwapChain();
+		createGraphicsPipeline();
 	}
 	catch (runtime_error& e) {
 		printf("ERROR: %s\n", e.what());
@@ -219,6 +220,20 @@ void VulkanRenderer::createSwapChain()
 
 		swapChainImages.emplace_back(swapChainImage);
 	}
+}
+
+void VulkanRenderer::createGraphicsPipeline()
+{
+	vector<char> vertexShaderCode = readFile("../Shaders/vert.spv");
+	vector<char> fragmentShaderCode = readFile("../Shaders/frag.spv");
+
+	VkShaderModule vertexShaderModule = createShaderModule(vertexShaderCode);
+	VkShaderModule fragmentShaderModule = createShaderModule(fragmentShaderCode);
+
+	// TODO: create pipeline
+
+	vkDestroyShaderModule(mainDevice.logicalDevice, fragmentShaderModule, nullptr);
+	vkDestroyShaderModule(mainDevice.logicalDevice, vertexShaderModule, nullptr);
 }
 
 void VulkanRenderer::getPhysicalDevice()
@@ -466,4 +481,20 @@ VkImageView VulkanRenderer::createImageView(VkImage image, VkFormat format, VkIm
 
 	return imageView;
 
+}
+
+VkShaderModule VulkanRenderer::createShaderModule(const vector<char>& code)
+{
+	VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
+	shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	shaderModuleCreateInfo.codeSize = code.size();
+	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+	VkShaderModule shaderModule;
+	VkResult result = vkCreateShaderModule(mainDevice.logicalDevice, &shaderModuleCreateInfo, nullptr, &shaderModule);
+	if (result != VK_SUCCESS) {
+		throw runtime_error("Failed to create a shadare module.");
+	}
+	
+	return shaderModule;
 }

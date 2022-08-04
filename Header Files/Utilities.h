@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fstream>
+
 using namespace std;
 
 const vector<const char*> deviceExtensions = {
@@ -25,3 +27,18 @@ struct SwapChainImage {
 	VkImage image;
 	VkImageView imageView;
 };
+
+static vector<char> readFile(const string &filename) {
+	ifstream file(filename, ios::binary | ios::ate);
+	if (!file.is_open()) {
+		throw runtime_error("Failed to open a file.");
+	}
+
+	size_t fileSize = (size_t)file.tellg();
+	vector<char> fileBuffer(fileSize);
+	file.seekg(0);
+	file.read(fileBuffer.data(), fileSize);
+	file.close();
+
+	return fileBuffer;
+}
