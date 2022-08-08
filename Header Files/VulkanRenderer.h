@@ -7,6 +7,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <array>
 
 #include "Utilities.h"
 #include "VulkanValidation.h"
@@ -38,6 +39,8 @@ private:
 	VkSwapchainKHR swapchain;
 	vector<SwapChainImage> swapChainImages;
 
+	VkPipelineLayout pipelineLayout;
+
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 
@@ -46,6 +49,7 @@ private:
 	void createLogicalDevice();
 	void createSurface();
 	void createSwapChain();
+	void createRenderPass();
 	void createGraphicsPipeline();
 
 	void getPhysicalDevice();
