@@ -39,7 +39,9 @@ private:
 	VkSwapchainKHR swapchain;
 	vector<SwapChainImage> swapChainImages;
 
+	VkPipeline graphicsPipeline;
 	VkPipelineLayout pipelineLayout;
+	VkRenderPass renderPass;
 
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
