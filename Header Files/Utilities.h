@@ -23,7 +23,7 @@ struct SwapChainDetails {
 	vector<VkPresentModeKHR> presentationModes;
 };
 
-struct SwapChainImage {
+struct SwapchainImage {
 	VkImage image;
 	VkImageView imageView;
 };
