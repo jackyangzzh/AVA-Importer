@@ -18,6 +18,11 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createSwapChain();
 		createRenderPass();
 		createGraphicsPipeline();
+		createFramebuffers();
+		createCommandPool();
+		createCommandBuffers();
+		recordCommands();
+		createSynchronization();
 	}
 	catch (runtime_error& e) {
 		printf("ERROR: %s\n", e.what());
@@ -27,8 +32,47 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	return 0;
 }
 
+void VulkanRenderer::draw()
+{
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(mainDevice.logicalDevice, swapchain, numeric_limits<uint64_t>::max(), imageAvailable, VK_NULL_HANDLE, &imageIndex);
+	
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &imageAvailable;
+	VkPipelineStageFlags waitStages[] = {
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+	};
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &renderFinished;
+
+	VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	if (result != VK_SUCCESS) {
+		throw runtime_error("Failed to submit Command Buffer to Queue.");
+	}
+
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &renderFinished;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &swapchain;
+	presentInfo.pImageIndices = &imageIndex;
+
+	result = vkQueuePresentKHR(presentationQueue, &presentInfo);
+	if (result != VK_SUCCESS) {
+		throw runtime_error("Failed to present Image.");
+	}
+}
+
 void VulkanRenderer::cleanup()
 {
+	vkDestroySemaphore(mainDevice.logicalDevice, renderFinished, nullptr);
+	vkDestroySemaphore(mainDevice.logicalDevice, imageAvailable, nullptr);
 	vkDestroyCommandPool(mainDevice.logicalDevice, graphicsCommandPool, nullptr);
 	for (auto framebuffer : swapChainFramebuffers) {
 		vkDestroyFramebuffer(mainDevice.logicalDevice, framebuffer, nullptr);
@@ -238,7 +282,7 @@ void VulkanRenderer::createRenderPass()
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -462,9 +506,53 @@ void VulkanRenderer::createCommandBuffers()
 	}
 }
 
+void VulkanRenderer::createSynchronization()
+{
+	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	bool isImageAvailable = vkCreateSemaphore(mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &imageAvailable) == VK_SUCCESS;
+	bool isRenderFinished = vkCreateSemaphore(mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &renderFinished) == VK_SUCCESS;
+
+	if (!isImageAvailable || !isRenderFinished) {
+		throw runtime_error("Failed to create a Semaphore.");
+	}
+}
+
 void VulkanRenderer::recordCommands()
 {
+	VkCommandBufferBeginInfo bufferBeginInfo = {};
+	bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = renderPass;
+	renderPassBeginInfo.renderArea.offset = { 0, 0 };
+	renderPassBeginInfo.renderArea.extent = swapChainExtent;
+	VkClearValue clearValue[] = {
+		{0.6f, 0.65f, 0.4f, 1.0f}
+	};
+	renderPassBeginInfo.pClearValues = clearValue;
+	renderPassBeginInfo.clearValueCount = 1;
 	
+	for (size_t i = 0; i < commandBuffers.size(); i++) {
+		renderPassBeginInfo.framebuffer = swapChainFramebuffers[i];
+
+		VkResult result = vkBeginCommandBuffer(commandBuffers[i], &bufferBeginInfo);
+		if (result != VK_SUCCESS) {
+			throw runtime_error("Failed to start recording a Command Buffer.");
+		}
+
+		vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+		vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+		vkCmdEndRenderPass(commandBuffers[i]);
+
+		result = vkEndCommandBuffer(commandBuffers[i]);
+		if (result != VK_SUCCESS) {
+			throw runtime_error("Failed to stop recording a command buffer.");
+		}
+	}
 }
 
 void VulkanRenderer::getPhysicalDevice()

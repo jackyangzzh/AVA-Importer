@@ -20,6 +20,7 @@ public:
 	VulkanRenderer();
 
 	int init(GLFWwindow* newWindow);
+	void draw();
 	void cleanup();
 
 	~VulkanRenderer();
@@ -51,6 +52,9 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 
+	VkSemaphore imageAvailable;
+	VkSemaphore renderFinished;
+
 	void createInstance();
 	void createDebugCallback();
 	void createLogicalDevice();
@@ -61,6 +65,7 @@ private:
 	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffers();
+	void createSynchronization();
 
 	void recordCommands();
 
