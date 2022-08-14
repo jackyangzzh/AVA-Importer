@@ -2,13 +2,13 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
 #include <stdexcept>
 #include <vector>
 #include <set>
 #include <algorithm>
 #include <array>
 
+#include "Mesh.h"
 #include "Utilities.h"
 #include "VulkanValidation.h"
 
@@ -29,6 +29,9 @@ private:
 	GLFWwindow* window;
 
 	int currentFrame = 0;
+
+	// Scene objects
+	Mesh firstMesh;
 
 	VkInstance instance;
 	VkDebugReportCallbackEXT callback;
