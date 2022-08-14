@@ -28,6 +28,8 @@ public:
 private:
 	GLFWwindow* window;
 
+	int currentFrame = 0;
+
 	VkInstance instance;
 	VkDebugReportCallbackEXT callback;
 	struct {
@@ -52,8 +54,9 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 
-	VkSemaphore imageAvailable;
-	VkSemaphore renderFinished;
+	vector<VkSemaphore> imageAvailable;
+	vector<VkSemaphore> renderFinished;
+	vector<VkFence> drawFences;
 
 	void createInstance();
 	void createDebugCallback();
