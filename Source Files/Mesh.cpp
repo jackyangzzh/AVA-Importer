@@ -4,17 +4,21 @@ Mesh::Mesh()
 {
 }
 
-Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, vector<Vertex>* vertices)
+Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, vector<Vertex>* vertices, vector<uint32_t>* indices)
 {
 	vertexCount = vertices->size();
+	indexCount = indices->size();
 	physicalDevice = newPhysicalDevice;
 	device = newDevice;
-	createVertexBuffer(vertices);
+	createVertexBuffer(transferQueue, transferCommandPool, vertices);
+	createIndexBuffer(transferQueue, transferCommandPool, indices);
 }
 
-void Mesh::destroyVertexBuffer() {
+void Mesh::destroyBuffers() {
 	vkDestroyBuffer(device, vertexBuffer, nullptr);
 	vkFreeMemory(device, vertexBufferMemory, nullptr);
+	vkDestroyBuffer(device, indexBuffer, nullptr);
+	vkFreeMemory(device, indexBufferMemory, nullptr);
 }
 
 Mesh::~Mesh()
@@ -31,49 +35,49 @@ VkBuffer Mesh::getVertexBuffer()
 	return vertexBuffer;
 }
 
-VkBuffer Mesh::createVertexBuffer(vector<Vertex>* vertices)
+int Mesh::getIndexCount()
 {
-	VkBufferCreateInfo bufferInfo = {};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = sizeof(Vertex) * vertices->size();
-	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	VkResult result = vkCreateBuffer(device, &bufferInfo, nullptr, &vertexBuffer);
-	if (result != VK_SUCCESS) {
-		throw runtime_error("Failed to create Vertex Buffer");
-	}
-
-	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(device, vertexBuffer, &memoryRequirements);
-
-	VkMemoryAllocateInfo memoryAllocInfo = {};
-	memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	memoryAllocInfo.allocationSize = memoryRequirements.size;
-	memoryAllocInfo.memoryTypeIndex = findMemoryTypeIndex(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	result = vkAllocateMemory(device, &memoryAllocInfo, nullptr, &vertexBufferMemory);
-	if (result != VK_SUCCESS) {
-		throw runtime_error("Failed to allocate Vertex Buffer Memory.");
-	}
-
-	vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
-
-	void* data;
-	vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-	memcpy(data, vertices->data(), (size_t)bufferInfo.size);
-	vkUnmapMemory(device, vertexBufferMemory);
-
+	return indexCount;
 }
 
-uint32_t Mesh::findMemoryTypeIndex(uint32_t allowedTypes, VkMemoryPropertyFlags properties) {
-	VkPhysicalDeviceMemoryProperties memoryProperties;
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+VkBuffer Mesh::getIndexBuffer()
+{
+	return indexBuffer;
+}
 
-	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i) {
+void Mesh::createVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, vector<Vertex>* vertices)
+{
+	VkDeviceSize bufferSize = sizeof(Vertex) * vertices->size();
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
 
-		if ((allowedTypes & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-			return i;
-		}
-	}
+	createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, vertices->data(), (size_t)bufferSize);
+	vkUnmapMemory(device, stagingBufferMemory);
+
+	createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &vertexBuffer, &vertexBufferMemory);
+	copyBuffer(device, transferQueue, transferCommandPool, stagingBuffer, vertexBuffer, bufferSize);
+	vkDestroyBuffer(device, stagingBuffer, nullptr);
+	vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, vector<uint32_t>* indices) {
+	VkDeviceSize bufferSize = sizeof(uint32_t) * indices->size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, indices->data(), (size_t)bufferSize);
+	vkUnmapMemory(device, stagingBufferMemory);
+
+	createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &indexBuffer, &indexBufferMemory);
+	copyBuffer(device, transferQueue, transferCommandPool, stagingBuffer, indexBuffer, bufferSize);
+	vkDestroyBuffer(device, stagingBuffer, nullptr);
+	vkFreeMemory(device, stagingBufferMemory, nullptr);
 }

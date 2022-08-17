@@ -31,7 +31,7 @@ private:
 	int currentFrame = 0;
 
 	// Scene objects
-	Mesh firstMesh;
+	vector<Mesh> meshList;
 
 	VkInstance instance;
 	VkDebugReportCallbackEXT callback;
