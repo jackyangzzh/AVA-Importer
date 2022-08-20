@@ -33,6 +33,12 @@ private:
 	// Scene objects
 	vector<Mesh> meshList;
 
+	struct MVP {
+		glm::mat4 projection;
+		glm::mat4 view;
+		glm::mat4 model;
+	} mvp;
+
 	VkInstance instance;
 	VkDebugReportCallbackEXT callback;
 	struct {
@@ -47,6 +53,11 @@ private:
 	vector<SwapchainImage> swapChainImages;
 	vector<VkFramebuffer> swapChainFramebuffers;
 	vector<VkCommandBuffer> commandBuffers;
+
+	VkDescriptorSetLayout descriptorSetLayout;
+
+	vector<VkBuffer> uniformBuffer;
+	vector<VkDeviceMemory> uniformBufferMemory;
 
 	VkPipeline graphicsPipeline;
 	VkPipelineLayout pipelineLayout;
@@ -67,11 +78,14 @@ private:
 	void createSurface();
 	void createSwapChain();
 	void createRenderPass();
+	void createDescriptorSetLayout();
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffers();
 	void createSynchronization();
+
+	void createUniformBuffers();
 
 	void recordCommands();
 
