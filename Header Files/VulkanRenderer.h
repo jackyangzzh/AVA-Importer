@@ -55,6 +55,8 @@ private:
 	vector<VkCommandBuffer> commandBuffers;
 
 	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorPool descriptorPool;
+	vector<VkDescriptorSet> descriptorSets;
 
 	vector<VkBuffer> uniformBuffer;
 	vector<VkDeviceMemory> uniformBufferMemory;
@@ -86,6 +88,8 @@ private:
 	void createSynchronization();
 
 	void createUniformBuffers();
+	void createDescriptorPool();
+	void createDecriptorSets();
 
 	void recordCommands();
 
