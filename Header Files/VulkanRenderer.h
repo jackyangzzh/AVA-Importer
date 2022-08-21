@@ -22,6 +22,7 @@ public:
 	VulkanRenderer();
 
 	int init(GLFWwindow* newWindow);
+	void updateModel(glm::mat4 newModel);
 	void draw();
 	void cleanup();
 
