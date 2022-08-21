@@ -2,6 +2,8 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <stdexcept>
 #include <vector>
 #include <set>
@@ -89,7 +91,9 @@ private:
 
 	void createUniformBuffers();
 	void createDescriptorPool();
-	void createDecriptorSets();
+	void createDescriptorSets();
+
+	void updateUniformBuffer(uint32_t imageIndex);
 
 	void recordCommands();
 
