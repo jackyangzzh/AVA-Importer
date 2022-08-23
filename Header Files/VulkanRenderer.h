@@ -36,11 +36,10 @@ private:
 	// Scene objects
 	vector<Mesh> meshList;
 
-	struct MVP {
+	struct UboViewProjection {
 		glm::mat4 projection;
 		glm::mat4 view;
-		glm::mat4 model;
-	} mvp;
+	} uboViewProjection;
 
 	VkInstance instance;
 	VkDebugReportCallbackEXT callback;
