@@ -655,15 +655,21 @@ void VulkanRenderer::createUniformBuffers()
 
 void VulkanRenderer::createDescriptorPool()
 {
-	VkDescriptorPoolSize poolSize = {};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = static_cast<uint32_t>(uniformBuffer.size());
+	VkDescriptorPoolSize vpPoolSize = {};
+	vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	vpPoolSize.descriptorCount = static_cast<uint32_t>(vpUniformBuffer.size());
+
+	VkDescriptorPoolSize modelPoolSize = {};
+	modelPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	modelPoolSize.descriptorCount = static_cast<uint32_t>(modelUniformBuffer.size());
+
+	vector<VkDescriptorPoolSize> descriptorPoolSizes = { vpPoolSize, modelPoolSize };
 
 	VkDescriptorPoolCreateInfo poolCreateInfo = {};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCreateInfo.maxSets = static_cast<uint32_t>(uniformBuffer.size());
-	poolCreateInfo.poolSizeCount = 1;
-	poolCreateInfo.pPoolSizes = &poolSize;
+	poolCreateInfo.maxSets = static_cast<uint32_t>(swapChainImages.size());
+	poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
+	poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
 
 	VkResult result = vkCreateDescriptorPool(mainDevice.logicalDevice, &poolCreateInfo, nullptr, &descriptorPool);
 	if (result != VK_SUCCESS) {
@@ -673,14 +679,14 @@ void VulkanRenderer::createDescriptorPool()
 
 void VulkanRenderer::createDescriptorSets()
 {
-	descriptorSets.resize(uniformBuffer.size());
+	descriptorSets.resize(swapChainImages.size());
 
-	vector<VkDescriptorSetLayout> setLayouts(uniformBuffer.size(), descriptorSetLayout);
+	vector<VkDescriptorSetLayout> setLayouts(swapChainImages.size(), descriptorSetLayout);
 
 	VkDescriptorSetAllocateInfo setAllocInfo = {};
 	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	setAllocInfo.descriptorPool = descriptorPool;
-	setAllocInfo.descriptorSetCount = static_cast<uint32_t>(uniformBuffer.size());
+	setAllocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
 	setAllocInfo.pSetLayouts = setLayouts.data();
 
 	VkResult result = vkAllocateDescriptorSets(mainDevice.logicalDevice, &setAllocInfo, descriptorSets.data());
@@ -688,22 +694,38 @@ void VulkanRenderer::createDescriptorSets()
 		throw runtime_error("Failed to allocate Descriptor Sets.");
 	}
 
-	for (size_t i = 0; i < uniformBuffer.size(); ++i) {
-		VkDescriptorBufferInfo mvpBufferInfo = {};
-		mvpBufferInfo.buffer = uniformBuffer[i];
-		mvpBufferInfo.offset = 0;
-		mvpBufferInfo.range = sizeof(UboViewProjection);
+	for (size_t i = 0; i < swapChainImages.size(); ++i) {
+		VkDescriptorBufferInfo vpBufferInfo = {};
+		vpBufferInfo.buffer = vpUniformBuffer[i];
+		vpBufferInfo.offset = 0;
+		vpBufferInfo.range = sizeof(UboViewProjection);
 
-		VkWriteDescriptorSet mvpSetWrite = {};
-		mvpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		mvpSetWrite.dstSet = descriptorSets[i];
-		mvpSetWrite.dstBinding = 0;
-		mvpSetWrite.dstArrayElement = 0;
-		mvpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		mvpSetWrite.descriptorCount = 1;
-		mvpSetWrite.pBufferInfo = &mvpBufferInfo;
+		VkWriteDescriptorSet vpSetWrite = {};
+		vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		vpSetWrite.dstSet = descriptorSets[i];
+		vpSetWrite.dstBinding = 0;
+		vpSetWrite.dstArrayElement = 0;
+		vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		vpSetWrite.descriptorCount = 1;
+		vpSetWrite.pBufferInfo = &vpBufferInfo;
 
-		vkUpdateDescriptorSets(mainDevice.logicalDevice, 1, &mvpSetWrite, 0, nullptr);
+		VkDescriptorBufferInfo modelBufferInfo = {};
+		modelBufferInfo.buffer = vpUniformBuffer[i];
+		modelBufferInfo.offset = 0;
+		modelBufferInfo.range = modelUniformAlignment;
+
+		VkWriteDescriptorSet modelSetWrite = {};
+		modelSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		modelSetWrite.dstSet = descriptorSets[i];
+		modelSetWrite.dstBinding = 1;
+		modelSetWrite.dstArrayElement = 0;
+		modelSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		modelSetWrite.descriptorCount = 1;
+		modelSetWrite.pBufferInfo = &modelBufferInfo;
+
+		vector<VkWriteDescriptorSet> setWrites = { vpSetWrite, modelSetWrite };
+
+		vkUpdateDescriptorSets(mainDevice.logicalDevice, static_cast<uint32_t>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
 }
 
