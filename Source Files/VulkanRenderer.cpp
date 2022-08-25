@@ -116,6 +116,7 @@ void VulkanRenderer::draw()
 void VulkanRenderer::cleanup()
 {
 	vkDeviceWaitIdle(mainDevice.logicalDevice);
+	_aligned_free(modelTransferSpace);
 	vkDestroyDescriptorPool(mainDevice.logicalDevice, descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(mainDevice.logicalDevice, descriptorSetLayout, nullptr);
 	for (size_t i = 0; i < uniformBuffer.size(); ++i) {
@@ -388,17 +389,26 @@ void VulkanRenderer::createRenderPass()
 
 void VulkanRenderer::createDescriptorSetLayout()
 {
-	VkDescriptorSetLayoutBinding mvpLayoutBinding = {};
-	mvpLayoutBinding.binding = 0;
-	mvpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	mvpLayoutBinding.descriptorCount = 1;
-	mvpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	mvpLayoutBinding.pImmutableSamplers = nullptr;
+	VkDescriptorSetLayoutBinding vpLayoutBinding = {};
+	vpLayoutBinding.binding = 0;
+	vpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	vpLayoutBinding.descriptorCount = 1;
+	vpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	vpLayoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutBinding modelLayoutBinding = {};
+	modelLayoutBinding.binding = 1;
+	modelLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	modelLayoutBinding.descriptorCount = 1;
+	modelLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	modelLayoutBinding.pImmutableSamplers = nullptr;
+
+	vector<VkDescriptorSetLayoutBinding> layoutBindings = { vpLayoutBinding, modelLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.bindingCount = 1;
-	layoutCreateInfo.pBindings = &mvpLayoutBinding;
+	layoutCreateInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+	layoutCreateInfo.pBindings = layoutBindings.data();
 
 
 	VkResult result = vkCreateDescriptorSetLayout(mainDevice.logicalDevice, &layoutCreateInfo, nullptr, &descriptorSetLayout);
@@ -629,12 +639,17 @@ void VulkanRenderer::createSynchronization()
 
 void VulkanRenderer::createUniformBuffers()
 {
-	VkDeviceSize bufferSize = sizeof(UboViewProjection);
-	uniformBuffer.resize(swapChainImages.size());
-	uniformBufferMemory.resize(swapChainImages.size());
+	VkDeviceSize vpBufferSize = sizeof(UboViewProjection);
+	VkDeviceSize modelBufferSize = modelUniformAlignment * MAX_OBJECTS;
+
+	vpUniformBuffer.resize(swapChainImages.size());
+	vpUniformBufferMemory.resize(swapChainImages.size());
+	modelUniformBuffer.resize(swapChainImages.size());
+	modelUniformBufferMemory.resize(swapChainImages.size());
 
 	for (size_t i = 0; i < swapChainImages.size(); ++i) {
-		createBuffer(mainDevice.physicalDevice, mainDevice.logicalDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffer[i], &uniformBufferMemory[i]);
+		createBuffer(mainDevice.physicalDevice, mainDevice.logicalDevice, vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &vpUniformBuffer[i], &vpUniformBufferMemory[i]);
+		createBuffer(mainDevice.physicalDevice, mainDevice.logicalDevice, modelBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &modelUniformBuffer[i], &modelUniformBufferMemory[i]);
 	}
 }
 
@@ -764,6 +779,18 @@ void VulkanRenderer::getPhysicalDevice()
 			break;
 		}
 	}
+
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(mainDevice.physicalDevice, &deviceProperties);
+	minUniformBufferOffset = deviceProperties.limits.minUniformBufferOffsetAlignment;
+
+}
+
+void VulkanRenderer::allocateDynamicBufferTransferSpace()
+{
+	modelUniformAlignment = (sizeof(UboModel) + minUniformBufferOffset - 1) & ~(minUniformBufferOffset - 1);
+
+	modelTransferSpace = (UboModel*)_aligned_malloc(modelUniformAlignment * MAX_OBJECTS, modelUniformAlignment);
 }
 
 bool VulkanRenderer::checkInstanceExtensionSupport(vector<const char*>* checkExtensions)

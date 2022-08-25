@@ -7,7 +7,8 @@
 
 using namespace std;
 
-const int MAX_FRAME_DRAWS = 2;
+const int MAX_FRAME_DRAWS = 3;
+const int MAX_OBJECTS = 2;
 
 const vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME

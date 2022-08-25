@@ -60,8 +60,14 @@ private:
 	VkDescriptorPool descriptorPool;
 	vector<VkDescriptorSet> descriptorSets;
 
-	vector<VkBuffer> uniformBuffer;
-	vector<VkDeviceMemory> uniformBufferMemory;
+	vector<VkBuffer> vpUniformBuffer;
+	vector<VkDeviceMemory> vpUniformBufferMemory;
+	vector<VkBuffer> modelUniformBuffer;
+	vector<VkDeviceMemory> modelUniformBufferMemory;
+
+	VkDeviceSize minUniformBufferOffset;
+	size_t modelUniformAlignment;
+	UboModel* modelTransferSpace;
 
 	VkPipeline graphicsPipeline;
 	VkPipelineLayout pipelineLayout;
@@ -98,6 +104,7 @@ private:
 	void recordCommands();
 
 	void getPhysicalDevice();
+	void allocateDynamicBufferTransferSpace();
 
 	bool checkInstanceExtensionSupport(vector<const char*>* checkExtensions);
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
