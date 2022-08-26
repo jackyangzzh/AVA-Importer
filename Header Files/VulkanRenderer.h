@@ -22,7 +22,7 @@ public:
 	VulkanRenderer();
 
 	int init(GLFWwindow* newWindow);
-	void updateModel(glm::mat4 newModel);
+	void updateModel(int modelId, glm::mat4 newModel);
 	void draw();
 	void cleanup();
 
@@ -99,7 +99,7 @@ private:
 	void createDescriptorPool();
 	void createDescriptorSets();
 
-	void updateUniformBuffer(uint32_t imageIndex);
+	void updateUniformBuffers(uint32_t imageIndex);
 
 	void recordCommands();
 
