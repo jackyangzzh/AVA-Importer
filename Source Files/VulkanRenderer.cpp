@@ -43,7 +43,6 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		vector<uint32_t> meshIndices = {
 			0, 1, 2,
 			2, 3, 0
-
 		};
 
 		Mesh firstMesh = Mesh(mainDevice.physicalDevice, mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool, &meshVertices1, &meshIndices);
@@ -77,12 +76,13 @@ void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel)
 
 void VulkanRenderer::draw()
 {
-	uint32_t imageIndex;
-	vkAcquireNextImageKHR(mainDevice.logicalDevice, swapchain, numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
-	updateUniformBuffers(imageIndex);
 
 	vkWaitForFences(mainDevice.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, numeric_limits<uint64_t>::max());
 	vkResetFences(mainDevice.logicalDevice, 1, &drawFences[currentFrame]);
+
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(mainDevice.logicalDevice, swapchain, numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	updateUniformBuffers(imageIndex);
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -200,10 +200,16 @@ void VulkanRenderer::createInstance()
 		throw runtime_error("VkInstance does not support required extensions.");
 	}
 
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
-	createInfo.ppEnabledExtensionNames = instanceExtensions.data();
-	createInfo.enabledLayerCount = 0;
-	createInfo.ppEnabledLayerNames = nullptr;
+
+	if (validationEnabled) {
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
+		createInfo.ppEnabledExtensionNames = instanceExtensions.data();
+	} 
+	else {
+		createInfo.enabledLayerCount = 0;
+		createInfo.ppEnabledLayerNames = nullptr;
+	}
+
 
 	VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
 	if (result != VK_SUCCESS) {
@@ -284,7 +290,7 @@ void VulkanRenderer::createSwapChain()
 
 	uint32_t imageCount = swapChainDetails.surfaceCapabilities.minImageCount + 1;
 
-	if (swapChainDetails.surfaceCapabilities.maxImageCount > 0 && swapChainDetails.surfaceCapabilities.maxImageCount > imageCount) {
+	if (swapChainDetails.surfaceCapabilities.maxImageCount > 0 && swapChainDetails.surfaceCapabilities.maxImageCount < imageCount) {
 		imageCount = swapChainDetails.surfaceCapabilities.maxImageCount;
 	}
 
@@ -717,7 +723,7 @@ void VulkanRenderer::createDescriptorSets()
 		vpSetWrite.pBufferInfo = &vpBufferInfo;
 
 		VkDescriptorBufferInfo modelBufferInfo = {};
-		modelBufferInfo.buffer = vpUniformBuffer[i];
+		modelBufferInfo.buffer = modelUniformBuffer[i];
 		modelBufferInfo.offset = 0;
 		modelBufferInfo.range = modelUniformAlignment;
 
@@ -795,7 +801,7 @@ void VulkanRenderer::recordCommands()
 
 		result = vkEndCommandBuffer(commandBuffers[i]);
 		if (result != VK_SUCCESS) {
-			throw runtime_error("Failed to stop recording a command buffer.");
+			throw runtime_error("Failed to stop recording a Command Buffer.");
 		}
 	}
 }
