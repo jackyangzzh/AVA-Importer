@@ -56,6 +56,10 @@ private:
 	vector<VkFramebuffer> swapChainFramebuffers;
 	vector<VkCommandBuffer> commandBuffers;
 
+	VkImage depthBufferImage;
+	VkDeviceMemory depthBufferImageMemory;
+	VkImageView depthBufferImageView;
+
 	VkPushConstantRange pushConstantRange;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorPool descriptorPool;
@@ -92,6 +96,7 @@ private:
 	void createDescriptorSetLayout();
 	void createPushConstantRange();
 	void createGraphicsPipeline();
+	void createDepthBufferImage();
 	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffers();
@@ -119,7 +124,9 @@ private:
 	VkSurfaceFormatKHR chooseBestSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats);
 	VkPresentModeKHR chooseBestPresentationMode(const vector<VkPresentModeKHR> presentationModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+	VkFormat chooseSupportedFormat(const vector<VkFormat> &formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags);
 
+	VkImage createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags proFlags, VkDeviceMemory* imageMemory);
 	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 	VkShaderModule createShaderModule(const vector<char>& code);
 };
