@@ -39,7 +39,7 @@ struct SwapchainImage {
 	VkImageView imageView;
 };
 
-static vector<char> readFile(const string &filename) {
+static vector<char> readFile(const string& filename) {
 	ifstream file(filename, ios::binary | ios::ate);
 	if (!file.is_open()) {
 		throw runtime_error("Failed to open a file.");
@@ -68,7 +68,7 @@ static uint32_t findMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t al
 }
 
 
-static void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags bufferProperties, VkBuffer *buffer, VkDeviceMemory *bufferMemory) {
+static void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags bufferProperties, VkBuffer* buffer, VkDeviceMemory* bufferMemory) {
 	VkBufferCreateInfo bufferInfo = {};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = bufferSize;
@@ -92,43 +92,68 @@ static void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDev
 	if (result != VK_SUCCESS) {
 		throw runtime_error("Failed to allocate Vertex Buffer Memory.");
 	}
-	 
+
 	vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
 }
 
-static void copyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize) {
-	VkCommandBuffer transferCommandBuffer;
+
+static VkCommandBuffer beginCommandBuffer(VkDevice device, VkCommandPool commandPool) {
+	VkCommandBuffer commandBuffer;
 
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = transferCommandPool;
+	allocInfo.commandPool = commandPool;
 	allocInfo.commandBufferCount = 1;
 
-	vkAllocateCommandBuffers(device, &allocInfo, &transferCommandBuffer);
+	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
 
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	vkBeginCommandBuffer(transferCommandBuffer, &beginInfo);
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+}
 
-	VkBufferCopy bufferCopyRegion = {};
-	bufferCopyRegion.srcOffset = 0;
-	bufferCopyRegion.dstOffset = 0;
-	bufferCopyRegion.size = bufferSize;
-
-	vkCmdCopyBuffer(transferCommandBuffer, srcBuffer, dstBuffer, 1, &bufferCopyRegion);
-	vkEndCommandBuffer(transferCommandBuffer);
+static void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool, VkQueue queue, VkCommandBuffer commandBuffer) {
+	vkEndCommandBuffer(commandBuffer);
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &transferCommandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer;
 
-	vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(transferQueue);
+	vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(queue);
+	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+}
 
-	vkFreeCommandBuffers(device, transferCommandPool, 1, &transferCommandBuffer);
+static void copyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize) {
 
+	VkCommandBuffer transferCommandBuffer = beginCommandBuffer(device, transferCommandPool);
+	VkBufferCopy bufferCopyRegion = {};
+	bufferCopyRegion.srcOffset = 0;
+	bufferCopyRegion.dstOffset = 0;
+	bufferCopyRegion.size = bufferSize;
+	vkCmdCopyBuffer(transferCommandBuffer, srcBuffer, dstBuffer, 1, &bufferCopyRegion);
+	endAndSubmitCommandBuffer(device, transferCommandPool, transferQueue, transferCommandBuffer);
+}
+
+static void copyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, VkBuffer srcBuffer, VkImage image, uint32_t width, uint32_t height) {
+	VkCommandBuffer transferCommandBuffer = beginCommandBuffer(device, transferCommandPool);
+
+	VkBufferImageCopy imageRegion = {};
+	imageRegion.bufferOffset = 0;
+	imageRegion.bufferRowLength = 0;
+	imageRegion.bufferImageHeight = 0;
+	imageRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageRegion.imageSubresource.mipLevel = 0;
+	imageRegion.imageSubresource.baseArrayLayer = 0;
+	imageRegion.imageSubresource.layerCount = 1;
+	imageRegion.imageOffset = { 0, 0, 0 };
+	imageRegion.imageExtent = { width, height, 1 };
+
+	vkCmdCopyBufferToImage(transferCommandBuffer, srcBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageRegion);
+
+	endAndSubmitCommandBuffer(device, transferCommandPool, transferQueue, transferCommandBuffer);
 }

@@ -1142,3 +1142,39 @@ VkShaderModule VulkanRenderer::createShaderModule(const vector<char>& code)
 
 	return shaderModule;
 }
+
+int VulkanRenderer::createTexture(string fileName)
+{
+	int width, height;
+	VkDeviceSize imageSize;
+	stbi_uc* imageData = loadTextureFile(fileName, &width, &height, &imageSize);
+
+	VkBuffer imageStagingBuffer;
+	VkDeviceMemory imageStagingBufferMemory;
+	createBuffer(mainDevice.physicalDevice, mainDevice.logicalDevice, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &imageStagingBuffer, &imageStagingBufferMemory);
+
+	void* data;
+	vkMapMemory(mainDevice.logicalDevice, imageStagingBufferMemory, 0, imageSize, 0, &data);
+	memcpy(data, imageData, static_cast<uint32_t>(imageSize));
+	vkUnmapMemory(mainDevice.logicalDevice, imageStagingBufferMemory);
+
+	stbi_image_free(imageData);
+
+	VkImage texImage;
+	VkDeviceMemory texImageMemory;
+	texImage = createImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texImageMemory);
+
+
+}
+
+stbi_uc* VulkanRenderer::loadTextureFile(string fileName, int* width, int* height, VkDeviceSize* imageSize)
+{
+	int channels;
+	string fileLoc = "Textures/" + fileName;
+	stbi_uc* image = stbi_load(fileLoc.c_str(), width, height, &channels, STBI_rgb_alpha);
+	if (!image) {
+		throw runtime_error("Failed to load a Texture File.");
+	}
+	*imageSize = *width * *height * 4;
+	return image;
+}

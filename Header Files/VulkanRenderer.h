@@ -13,6 +13,7 @@
 #include "Mesh.h"
 #include "Utilities.h"
 #include "VulkanValidation.h"
+#include "stb_image.h"
 
 using namespace std;
 
@@ -70,9 +71,8 @@ private:
 	vector<VkBuffer> modelUniformBuffer;
 	vector<VkDeviceMemory> modelUniformBufferMemory;
 
-	//VkDeviceSize minUniformBufferOffset;
-	//size_t modelUniformAlignment;
-	//Model* modelTransferSpace;
+	vector<VkImage> textureImages;
+	vector<VkDeviceMemory> textureImageMemory;
 
 	VkPipeline graphicsPipeline;
 	VkPipelineLayout pipelineLayout;
@@ -124,10 +124,14 @@ private:
 	VkSurfaceFormatKHR chooseBestSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats);
 	VkPresentModeKHR chooseBestPresentationMode(const vector<VkPresentModeKHR> presentationModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
-	VkFormat chooseSupportedFormat(const vector<VkFormat> &formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags);
+	VkFormat chooseSupportedFormat(const vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags);
 
 	VkImage createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags proFlags, VkDeviceMemory* imageMemory);
 	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 	VkShaderModule createShaderModule(const vector<char>& code);
+
+	int createTexture(string fileName);
+
+	stbi_uc* loadTextureFile(string fileName, int* width, int* height, VkDeviceSize* imageSize);
 };
 
