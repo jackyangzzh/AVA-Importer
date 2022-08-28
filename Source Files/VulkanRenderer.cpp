@@ -24,6 +24,8 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createFramebuffers();
 		createCommandPool();
 
+		int firstTexture = createTexture("vulkan.png");
+
 		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
 		uboViewProjection.view = glm::lookAt(glm::vec3(3.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		uboViewProjection.projection[1][1] *= -1;
@@ -122,6 +124,12 @@ void VulkanRenderer::draw()
 void VulkanRenderer::cleanup()
 {
 	vkDeviceWaitIdle(mainDevice.logicalDevice);
+
+	for (size_t i = 0; i < textureImages.size(); ++i) {
+		vkDestroyImage(mainDevice.logicalDevice, textureImages[i], nullptr);
+		vkFreeMemory(mainDevice.logicalDevice, textureImageMemory[i], nullptr);
+	}
+
 	vkDestroyImageView(mainDevice.logicalDevice, depthBufferImageView, nullptr);
 	vkDestroyImage(mainDevice.logicalDevice, depthBufferImage, nullptr);
 	vkFreeMemory(mainDevice.logicalDevice, depthBufferImageMemory, nullptr);
@@ -1163,7 +1171,15 @@ int VulkanRenderer::createTexture(string fileName)
 	VkImage texImage;
 	VkDeviceMemory texImageMemory;
 	texImage = createImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texImageMemory);
+	transitionImageLayout(mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool, texImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	copyImageBuffer(mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool, imageStagingBuffer, texImage, width, height);
+	textureImages.emplace_back(texImage);
+	textureImageMemory.emplace_back(texImageMemory);
 
+	vkDestroyBuffer(mainDevice.logicalDevice, imageStagingBuffer, nullptr);
+	vkFreeMemory(mainDevice.logicalDevice, imageStagingBufferMemory, nullptr);
+
+	return textureImages.size() - 1;
 
 }
 
