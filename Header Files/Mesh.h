@@ -14,10 +14,12 @@ class Mesh
 {
 public: 
 	Mesh();
-	Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, vector<Vertex>* vertices, vector<uint32_t>* indices);
+	Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, vector<Vertex>* vertices, vector<uint32_t>* indices, int newTexId);
 	
 	void setModel(glm::mat4 newModel);
 	Model getModel();
+
+	int getTexId();
 
 	int getVertexCount();
 	VkBuffer getVertexBuffer();
@@ -31,6 +33,7 @@ public:
 
 private: 
 	Model model;
+	int texId;
 
 	int vertexCount;
 	VkBuffer vertexBuffer;
