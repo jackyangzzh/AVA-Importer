@@ -32,6 +32,8 @@ public:
 	void draw();
 	void cleanup();
 
+	int createMeshModel(string modelFile);
+
 	~VulkanRenderer();
 
 private:
@@ -40,7 +42,7 @@ private:
 	int currentFrame = 0;
 
 	// Scene objects
-	vector<Mesh> meshList;
+	vector<MeshModel> modelList;
 
 	struct UboViewProjection {
 		glm::mat4 projection;
@@ -80,8 +82,6 @@ private:
 	vector<VkDeviceMemory> vpUniformBufferMemory;
 	vector<VkBuffer> modelUniformBuffer;
 	vector<VkDeviceMemory> modelUniformBufferMemory;
-
-	vector<MeshModel> modelList;
 
 	vector<VkImage> textureImages;
 	vector<VkDeviceMemory> textureImageMemory;
@@ -146,8 +146,6 @@ private:
 	int createTextureImage(string fileName);
 	int createTexture(string fileName);
 	int createTextureDescriptor(VkImageView textureImage);
-
-	void creatMeshModel(string modelFile);
 
 	stbi_uc* loadTextureFile(string fileName, int* width, int* height, VkDeviceSize* imageSize);
 };

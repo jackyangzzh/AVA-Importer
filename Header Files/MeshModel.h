@@ -12,7 +12,6 @@ using namespace std;
 class MeshModel
 {
 public:
-	MeshModel();
 	MeshModel(vector<Mesh> newMeshList);
 
 	size_t getMeshCount();
@@ -24,8 +23,9 @@ public:
 	void destroyMeshModel();
 
 	static vector<string> LoadMaterials(const aiScene* scene);
+	static vector<Mesh> LoadNode(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, aiNode* node, const aiScene* scene, vector<int> matToTex);
+	static Mesh LoadMesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, aiMesh* mesh, const aiScene* scene, vector<int> matToTex);
 
-	~MeshModel();
 
 private:
 	vector<Mesh> meshList;

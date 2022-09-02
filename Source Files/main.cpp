@@ -35,6 +35,8 @@ int main() {
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
+	int model1 = vulkanRenderer.createMeshModel("Models/indoor plant_02.obj");
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
@@ -47,16 +49,9 @@ int main() {
 			angle -= 360.0f;
 		}
 
-		glm::mat4 firstModel(1.0f);
-		glm::mat4 secondModel(1.0f);
-	
-		firstModel = glm::translate(firstModel, glm::vec3(-1.0f, 0.0f, -1.0f));
-		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
-		secondModel = glm::translate(secondModel, glm::vec3(1.0f, 0.0f, -3.0f));
-		secondModel = glm::rotate(secondModel, glm::radians(-angle * 20), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		vulkanRenderer.updateModel(0, firstModel);
-		vulkanRenderer.updateModel(1, secondModel);
+		glm::mat4 testMat = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		testMat = glm::rotate(testMat, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		vulkanRenderer.updateModel(model1, testMat);
 		vulkanRenderer.draw();
 	}
 

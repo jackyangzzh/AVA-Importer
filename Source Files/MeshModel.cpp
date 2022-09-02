@@ -46,11 +46,59 @@ vector<string> MeshModel::LoadMaterials(const aiScene* scene)
 		if (material->GetTextureCount(aiTextureType_DIFFUSE)) {
 			aiString path;
 			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
-
+				int idx = string(path.data).rfind("\\");
+				string fileName = string(path.data).substr(idx + 1);
+				textureList[i] = fileName;
 			}
 		}
-
 	}
 
-	return vector<string>();
+	return textureList;
+}
+
+vector<Mesh> MeshModel::LoadNode(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, aiNode* node, const aiScene* scene, vector<int> matToTex)
+{
+	vector<Mesh> meshList;
+
+	for (size_t i = 0; i < node->mNumMeshes; ++i) {
+		meshList.emplace_back(LoadMesh(newPhysicalDevice, newDevice, transferQueue, transferCommandPool, scene->mMeshes[node->mMeshes[i]], scene, matToTex));
+	}
+
+	for (size_t i = 0; i < node->mNumChildren; ++i) {
+		vector<Mesh> newList = LoadNode(newPhysicalDevice, newDevice, transferQueue, transferCommandPool, node->mChildren[i], scene, matToTex);
+		meshList.insert(meshList.end(), newList.begin(), newList.end());
+	}
+
+	return meshList;
+}
+
+Mesh MeshModel::LoadMesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, aiMesh* mesh, const aiScene* scene, vector<int> matToTex)
+{
+	vector<Vertex> vertices;
+	vector<uint32_t> indices;
+
+	vertices.resize(mesh->mNumVertices);
+
+	for (size_t i = 0; i < mesh->mNumVertices; ++i) {
+		vertices[i].pos = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
+
+		if (mesh->mTextureCoords[0]) {
+			vertices[i].tex = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+		}
+		else {
+			vertices[i].tex = { 0.0f, 0.0f };
+		}
+
+		vertices[i].col = { 1.0f, 1.0f, 1.0f };
+	}
+
+	for (size_t i = 0; i < mesh->mNumFaces; ++i) {
+		aiFace face = mesh->mFaces[i];
+		for (size_t j = 0; j < face.mNumIndices; ++j) {
+			indices.emplace_back(face.mIndices[j]);
+		}
+	}
+
+	Mesh newMesh = Mesh(newPhysicalDevice, newDevice, transferQueue, transferCommandPool, &vertices, &indices, matToTex[mesh->mMaterialIndex]);
+	return newMesh;
 }
