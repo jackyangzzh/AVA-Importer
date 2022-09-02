@@ -35,3 +35,22 @@ void MeshModel::destroyMeshModel()
 		mesh.destroyBuffers();
 	}
 }
+
+vector<string> MeshModel::LoadMaterials(const aiScene* scene)
+{
+	vector<string> textureList(scene->mNumMaterials);
+
+	for (size_t i = 0; i < scene->mNumMaterials; ++i) {
+		aiMaterial* material = scene->mMaterials[i];
+		textureList[i] = "";
+		if (material->GetTextureCount(aiTextureType_DIFFUSE)) {
+			aiString path;
+			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
+
+			}
+		}
+
+	}
+
+	return vector<string>();
+}

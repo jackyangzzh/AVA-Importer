@@ -1302,6 +1302,18 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage)
 	return samplerDescriptorSets.size() - 1;
 }
 
+void VulkanRenderer::creatMeshModel(string modelFile)
+{
+	Assimp::Importer importer;
+	const aiScene* scene = importer.ReadFile(modelFile, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+	if (scene == nullptr) {
+		throw runtime_error("Failed to load model: " + modelFile);
+	}
+
+	vector<string> textureNames;
+
+}
+
 stbi_uc* VulkanRenderer::loadTextureFile(string fileName, int* width, int* height, VkDeviceSize* imageSize)
 {
 	int channels;

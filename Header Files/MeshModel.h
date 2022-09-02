@@ -1,7 +1,9 @@
 #pragma once
 
 #include <vector>
+
 #include <glm/glm.hpp>
+#include <assimp/scene.h>
 
 #include "Mesh.h"
 
@@ -20,6 +22,8 @@ public:
 	void setModel(glm::mat4 newModel);
 
 	void destroyMeshModel();
+
+	static vector<string> LoadMaterials(const aiScene* scene);
 
 	~MeshModel();
 

@@ -4,6 +4,10 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include <stdexcept>
 #include <vector>
 #include <set>
@@ -11,6 +15,7 @@
 #include <array>
 
 #include "Mesh.h"
+#include "MeshModel.h"
 #include "Utilities.h"
 #include "VulkanValidation.h"
 #include "stb_image.h"
@@ -76,6 +81,8 @@ private:
 	vector<VkBuffer> modelUniformBuffer;
 	vector<VkDeviceMemory> modelUniformBufferMemory;
 
+	vector<MeshModel> modelList;
+
 	vector<VkImage> textureImages;
 	vector<VkDeviceMemory> textureImageMemory;
 	vector<VkImageView> textureImageViews;
@@ -139,6 +146,8 @@ private:
 	int createTextureImage(string fileName);
 	int createTexture(string fileName);
 	int createTextureDescriptor(VkImageView textureImage);
+
+	void creatMeshModel(string modelFile);
 
 	stbi_uc* loadTextureFile(string fileName, int* width, int* height, VkDeviceSize* imageSize);
 };
