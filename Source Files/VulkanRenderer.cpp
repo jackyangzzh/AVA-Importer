@@ -31,12 +31,11 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createSynchronization();
 
 		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
-		uboViewProjection.view = glm::lookAt(glm::vec3(3.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		uboViewProjection.view = glm::lookAt(glm::vec3(10.0f, 0.0f, 20.0f), glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		uboViewProjection.projection[1][1] *= -1;
 
 		createTexture("plain.png");
 	}
-
 
 	catch (runtime_error& e) {
 		printf("ERROR: %s\n", e.what());
@@ -202,7 +201,6 @@ void VulkanRenderer::createInstance()
 		createInfo.enabledLayerCount = 0;
 		createInfo.ppEnabledLayerNames = nullptr;
 	}
-
 
 	VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
 	if (result != VK_SUCCESS) {
@@ -561,7 +559,6 @@ void VulkanRenderer::createGraphicsPipeline()
 
 	array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { descriptorSetLayout, samplerSetLayout };
 
-
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
@@ -738,7 +735,6 @@ void VulkanRenderer::createUniformBuffers()
 
 void VulkanRenderer::createDescriptorPool()
 {
-
 	VkDescriptorPoolSize vpPoolSize = {};
 	vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	vpPoolSize.descriptorCount = static_cast<uint32_t>(vpUniformBuffer.size());
@@ -892,13 +888,6 @@ void VulkanRenderer::getPhysicalDevice()
 
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(mainDevice.physicalDevice, &deviceProperties);
-}
-
-void VulkanRenderer::allocateDynamicBufferTransferSpace()
-{
-	/*modelUniformAlignment = (sizeof(Model) + minUniformBufferOffset - 1) & ~(minUniformBufferOffset - 1);
-
-	modelTransferSpace = (Model*)_aligned_malloc(modelUniformAlignment * MAX_OBJECTS, modelUniformAlignment);*/
 }
 
 bool VulkanRenderer::checkInstanceExtensionSupport(vector<const char*>* checkExtensions)
@@ -1306,7 +1295,10 @@ int VulkanRenderer::createMeshModel(string modelFile)
 stbi_uc* VulkanRenderer::loadTextureFile(string fileName, int* width, int* height, VkDeviceSize* imageSize)
 {
 	int channels;
-	string fileLoc = "Textures/plain.png";
+
+	// Can be set to customized file path
+	string fileLoc = "Textures/avocado_Mat_baseColor.png";
+	
 	stbi_uc* image = stbi_load(fileLoc.c_str(), width, height, &channels, STBI_rgb_alpha);
 	if (image == nullptr) {
 		throw runtime_error("Failed to load a Texture File.");

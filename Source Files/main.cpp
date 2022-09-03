@@ -35,7 +35,7 @@ int main() {
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
-	int model1 = vulkanRenderer.createMeshModel("Models/indoor plant_02.obj");
+	int model1 = vulkanRenderer.createMeshModel("Models/avocado.obj");
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -44,7 +44,7 @@ int main() {
 		deltaTime = now - lastTime;
 		lastTime = now;
 
-		angle += 10.0f * deltaTime;
+		angle += 50.0f * deltaTime;
 		if (angle > 360.0f) {
 			angle -= 360.0f;
 		}

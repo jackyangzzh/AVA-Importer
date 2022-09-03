@@ -124,7 +124,6 @@ private:
 	void recordCommands(uint32_t currentImage);
 
 	void getPhysicalDevice();
-	void allocateDynamicBufferTransferSpace();
 
 	bool checkInstanceExtensionSupport(vector<const char*>* checkExtensions);
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
