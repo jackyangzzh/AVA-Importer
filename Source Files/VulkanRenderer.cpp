@@ -60,7 +60,6 @@ void VulkanRenderer::draw()
 
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mainDevice.logicalDevice, swapchain, numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
 	recordCommands(imageIndex);
 	updateUniformBuffers(imageIndex);
 
@@ -133,18 +132,23 @@ void VulkanRenderer::cleanup()
 		vkDestroyFence(mainDevice.logicalDevice, drawFences[i], nullptr);
 	}
 	vkDestroyCommandPool(mainDevice.logicalDevice, graphicsCommandPool, nullptr);
+
 	for (auto framebuffer : swapChainFramebuffers) {
 		vkDestroyFramebuffer(mainDevice.logicalDevice, framebuffer, nullptr);
 	}
+
 	vkDestroyPipeline(mainDevice.logicalDevice, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(mainDevice.logicalDevice, pipelineLayout, nullptr);
 	vkDestroyRenderPass(mainDevice.logicalDevice, renderPass, nullptr);
+
 	for (auto image : swapChainImages) {
 		vkDestroyImageView(mainDevice.logicalDevice, image.imageView, nullptr);
 	}
+
 	vkDestroySwapchainKHR(mainDevice.logicalDevice, swapchain, nullptr);
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyDevice(mainDevice.logicalDevice, nullptr);
+
 	if (validationEnabled) {
 		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
 	}
@@ -187,11 +191,9 @@ void VulkanRenderer::createInstance()
 	if (validationEnabled) {
 		instanceExtensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	}
-
 	if (!checkInstanceExtensionSupport(&instanceExtensions)) {
 		throw runtime_error("VkInstance does not support required extensions.");
 	}
-
 
 	if (validationEnabled) {
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
@@ -243,7 +245,6 @@ void VulkanRenderer::createLogicalDevice()
 		queueCreateInfos.emplace_back(queueCreateInfo);
 	}
 
-
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -281,7 +282,6 @@ void VulkanRenderer::createSwapChain()
 	VkExtent2D extent = chooseSwapExtent(swapChainDetails.surfaceCapabilities);
 
 	uint32_t imageCount = swapChainDetails.surfaceCapabilities.minImageCount + 1;
-
 	if (swapChainDetails.surfaceCapabilities.maxImageCount > 0 && swapChainDetails.surfaceCapabilities.maxImageCount < imageCount) {
 		imageCount = swapChainDetails.surfaceCapabilities.maxImageCount;
 	}
@@ -382,7 +382,6 @@ void VulkanRenderer::createRenderPass()
 	subpassDepedencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	subpassDepedencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	subpassDepedencies[0].dependencyFlags = 0;
-
 	subpassDepedencies[1].srcSubpass = 0;
 	subpassDepedencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	subpassDepedencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -423,7 +422,6 @@ void VulkanRenderer::createDescriptorSetLayout()
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutCreateInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
 	layoutCreateInfo.pBindings = layoutBindings.data();
-
 
 	VkResult result = vkCreateDescriptorSetLayout(mainDevice.logicalDevice, &layoutCreateInfo, nullptr, &descriptorSetLayout);
 	if (result != VK_SUCCESS) {
@@ -801,7 +799,6 @@ void VulkanRenderer::createDescriptorSets()
 		vpSetWrite.pBufferInfo = &vpBufferInfo;
 
 		vector<VkWriteDescriptorSet> setWrites = { vpSetWrite };
-
 		vkUpdateDescriptorSets(mainDevice.logicalDevice, static_cast<uint32_t>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
 }
@@ -934,7 +931,6 @@ bool VulkanRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device)
 				break;
 			}
 		}
-
 		if (!hasExtension) {
 			return false;
 		}
@@ -951,14 +947,12 @@ bool VulkanRenderer::checkValidationLayerSupport() {
 
 	for (const char* layerName : validationLayers) {
 		bool layerFound = false;
-
 		for (const auto& layerProperties : availableLayers) {
 			if (strcmp(layerName, layerProperties.layerName) == 0) {
 				layerFound = true;
 				break;
 			}
 		}
-
 		if (!layerFound) {
 			return false;
 		}
@@ -1295,10 +1289,7 @@ int VulkanRenderer::createMeshModel(string modelFile)
 stbi_uc* VulkanRenderer::loadTextureFile(string fileName, int* width, int* height, VkDeviceSize* imageSize)
 {
 	int channels;
-
-	// Can be set to customized file path
-	string fileLoc = "Textures/avocado_Mat_baseColor.png";
-	
+	string fileLoc = "Textures/avocado_Mat_baseColor.png"; 	// Can be set to customized file path
 	stbi_uc* image = stbi_load(fileLoc.c_str(), width, height, &channels, STBI_rgb_alpha);
 	if (image == nullptr) {
 		throw runtime_error("Failed to load a Texture File.");

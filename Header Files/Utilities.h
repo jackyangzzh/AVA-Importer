@@ -156,7 +156,6 @@ static void copyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPoo
 	imageRegion.imageExtent = { width, height, 1 };
 
 	vkCmdCopyBufferToImage(transferCommandBuffer, srcBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageRegion);
-
 	endAndSubmitCommandBuffer(device, transferCommandPool, transferQueue, transferCommandBuffer);
 }
 
@@ -176,9 +175,7 @@ static void transitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool 
 	imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
 	imageMemoryBarrier.subresourceRange.layerCount = 1;
 
-	VkPipelineStageFlags srcStage;
-	VkPipelineStageFlags dstStage;
-
+	VkPipelineStageFlags srcStage, dstStage;
 	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
 		imageMemoryBarrier.srcAccessMask = 0;
 		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;

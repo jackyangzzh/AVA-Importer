@@ -26,7 +26,6 @@ public:
 	static vector<Mesh> LoadNode(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, aiNode* node, const aiScene* scene, vector<int> matToTex);
 	static Mesh LoadMesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, aiMesh* mesh, const aiScene* scene, vector<int> matToTex);
 
-
 private:
 	vector<Mesh> meshList;
 	glm::mat4 model;
